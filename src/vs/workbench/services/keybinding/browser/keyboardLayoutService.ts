@@ -5,7 +5,6 @@
 
 import * as nls from '../../../../nls.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
-import { AppResourcePath, FileAccess } from '../../../../base/common/network.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import { KeymapInfo, IRawMixedKeyboardMapping, IKeymapInfo } from '../common/keymapInfo.js';
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
@@ -458,9 +457,16 @@ export class BrowserKeyboardMapperFactory extends BrowserKeyboardMapperFactoryBa
 		// super(notificationService, storageService, commandService);
 		super(configurationService);
 
-		const platform = isWindows ? 'win' : isMacintosh ? 'darwin' : 'linux';
+		// Upstream resolves this out of its own build output through `FileAccess`; a bundle
+		// has no such directory, so the three contributions are named for the bundler to
+		// emit as lazy chunks, exactly as `amdX.ts` names its npm modules.
+		const layoutContribution = isWindows
+			? () => import('./keyboardLayouts/layout.contribution.win.js')
+			: isMacintosh
+				? () => import('./keyboardLayouts/layout.contribution.darwin.js')
+				: () => import('./keyboardLayouts/layout.contribution.linux.js');
 
-		import(/* webpackIgnore: true */FileAccess.asBrowserUri(`vs/workbench/services/keybinding/browser/keyboardLayouts/layout.contribution.${platform}.js` satisfies AppResourcePath).path).then((m) => {
+		layoutContribution().then((m) => {
 			const keymapInfos: IKeymapInfo[] = m.KeyboardLayoutContribution.INSTANCE.layoutInfos;
 			this._keymapInfos.push(...keymapInfos.map(info => (new KeymapInfo(info.layout, info.secondaryLayouts, info.mapping, info.isUserKeyboardLayout))));
 			this._mru = this._keymapInfos;

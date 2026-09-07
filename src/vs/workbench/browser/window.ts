@@ -1,4 +1,4 @@
-/*---------------------------------------------------------------------------------------------
+﻿/*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
@@ -17,7 +17,7 @@ import { URI } from '../../base/common/uri.js';
 import { localize } from '../../nls.js';
 import { CommandsRegistry } from '../../platform/commands/common/commands.js';
 import { IDialogService, IPromptButton } from '../../platform/dialogs/common/dialogs.js';
-import { IInstantiationService, ServicesAccessor } from '../../platform/instantiation/common/instantiation.js';
+import { ServicesAccessor } from '../../platform/instantiation/common/instantiation.js';
 import { ILabelService } from '../../platform/label/common/label.js';
 import { IOpenerService } from '../../platform/opener/common/opener.js';
 import { IProductService } from '../../platform/product/common/productService.js';
@@ -26,7 +26,6 @@ import { IWorkbenchLayoutService } from '../services/layout/browser/layoutServic
 import { BrowserLifecycleService } from '../services/lifecycle/browser/lifecycleService.js';
 import { ILifecycleService, ShutdownReason } from '../services/lifecycle/common/lifecycle.js';
 import { IHostService } from '../services/host/browser/host.js';
-import { registerWindowDriver } from '../services/driver/browser/driver.js';
 import { CodeWindow, isAuxiliaryWindow, mainWindow } from '../../base/browser/window.js';
 import { createSingleCallFunction } from '../../base/common/functional.js';
 import { IConfigurationService } from '../../platform/configuration/common/configuration.js';
@@ -243,7 +242,6 @@ export class BrowserWindow extends BaseWindow {
 		@IProductService private readonly productService: IProductService,
 		@IBrowserWorkbenchEnvironmentService private readonly browserEnvironmentService: IBrowserWorkbenchEnvironmentService,
 		@IWorkbenchLayoutService layoutService: IWorkbenchLayoutService,
-		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IHostService hostService: IHostService,
 		@IContextMenuService contextMenuService: IContextMenuService,
 	) {
@@ -321,15 +319,6 @@ export class BrowserWindow extends BaseWindow {
 
 		// Commands
 		this.registerCommands();
-
-		// Smoke Test Driver
-		this.setupDriver();
-	}
-
-	private setupDriver(): void {
-		if (this.environmentService.enableSmokeTestDriver) {
-			registerWindowDriver(this.instantiationService);
-		}
 	}
 
 	private setupOpenHandlers(): void {

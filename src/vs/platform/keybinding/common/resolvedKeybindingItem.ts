@@ -5,7 +5,7 @@
 
 import { CharCode } from '../../../base/common/charCode.js';
 import { ResolvedKeybinding } from '../../../base/common/keybindings.js';
-import { ContextKeyExpression } from '../../contextkey/common/contextkey.js';
+import type { ContextKeyExpression } from '../../contextkey/common/contextkey.js';
 
 export class ResolvedKeybindingItem {
 	_resolvedKeybindingItemBrand: void = undefined;

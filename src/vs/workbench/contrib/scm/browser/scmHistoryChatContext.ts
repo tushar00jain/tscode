@@ -26,13 +26,9 @@ import { ChatContextKeys } from '../../chat/common/actions/chatContextKeys.js';
 import { ISCMHistoryItemChangeVariableEntry, ISCMHistoryItemVariableEntry } from '../../chat/common/attachments/chatVariableEntries.js';
 import { ScmHistoryItemResolver } from '../../multiDiffEditor/browser/scmMultiDiffSourceResolver.js';
 import { ISCMHistoryItem, ISCMHistoryItemChange } from '../common/history.js';
+import { SCMHistoryItemTransferData } from './scmHistoryViewPane.js';
 import { ISCMProvider, ISCMService, ISCMViewService } from '../common/scm.js';
 
-export interface SCMHistoryItemTransferData {
-	readonly name: string;
-	readonly resource: UriComponents;
-	readonly historyItem: ISCMHistoryItem;
-}
 
 export function extractSCMHistoryItemDropData(e: DragEvent): SCMHistoryItemTransferData[] | undefined {
 	if (!e.dataTransfer?.types.includes(CodeDataTransfers.SCM_HISTORY_ITEM)) {

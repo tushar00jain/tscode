@@ -75,8 +75,9 @@ import { AccessibilityVerbositySettingId } from '../../accessibility/browser/acc
 import { IAccessibilityService } from '../../../../platform/accessibility/common/accessibility.js';
 import { AccessibilityCommandId } from '../../accessibility/common/accessibilityCommands.js';
 import { SCMInputWidget } from './scmInput.js';
+import { SCMViewRoot } from '../tauri/scmViewRoot.js';
 
-type TreeElement = ISCMRepository | ISCMInput | ISCMActionButton | ISCMResourceGroup | ISCMResource | IResourceNode<ISCMResource, ISCMResourceGroup>;
+export type TreeElement = ISCMRepository | ISCMInput | ISCMActionButton | ISCMResourceGroup | ISCMResource | IResourceNode<ISCMResource, ISCMResourceGroup>;
 
 function processResourceFilterData(uri: URI, filterData: FuzzyScore | LabelFuzzyScore | undefined): [IMatch[] | undefined, IMatch[] | undefined] {
 	if (!filterData) {
@@ -918,7 +919,7 @@ export class SCMAccessibilityProvider implements IListAccessibilityProvider<Tree
 	}
 }
 
-const enum ViewSortKey {
+export const enum ViewSortKey {
 	Path = 'path',
 	Name = 'name',
 	Status = 'status'
@@ -1365,6 +1366,7 @@ export class SCMViewPane extends ViewPane {
 	private treeScrollTop: number | undefined;
 	private treeContainer!: HTMLElement;
 	private tree!: WorkbenchCompressibleAsyncDataTree<ISCMViewService, TreeElement, FuzzyScore>;
+	private viewRoot!: SCMViewRoot;
 
 	private listLabels!: ResourceLabels;
 	private inputRenderer!: InputRenderer;
@@ -1509,6 +1511,7 @@ export class SCMViewPane extends ViewPane {
 		this.layoutCache.width = width;
 		this._onDidLayout.fire();
 
+		height -= this.viewRoot.height;
 		this.treeContainer.style.height = `${height}px`;
 		this.tree.layout(height, width);
 	}
@@ -1612,12 +1615,14 @@ export class SCMViewPane extends ViewPane {
 
 		const compressionEnabled = observableConfigValue('scm.compactFolders', true, this.configurationService);
 
+		this.viewRoot = this.disposables.add(this.instantiationService.createInstance(SCMViewRoot, container, () => this.tree, () => compressionEnabled.get(), () => this.viewMode, treeDataSource, new SCMTreeFilter(), new SCMTreeSorter(() => this.viewMode, () => this.viewSortKey), new SCMTreeCompressionDelegate()));
+
 		this.tree = this.instantiationService.createInstance(
 			WorkbenchCompressibleAsyncDataTree,
 			'SCM Tree Repo',
 			container,
 			new ListDelegate(this.inputRenderer),
-			new SCMTreeCompressionDelegate(),
+			this.viewRoot.compression,
 			[
 				this.inputRenderer,
 				this.actionButtonRenderer,
@@ -1625,15 +1630,15 @@ export class SCMViewPane extends ViewPane {
 				this.instantiationService.createInstance(ResourceGroupRenderer, getActionViewItemProvider(this.instantiationService), resourceActionRunner),
 				this.instantiationService.createInstance(ResourceRenderer, () => this.viewMode, this.listLabels, getActionViewItemProvider(this.instantiationService), resourceActionRunner)
 			],
-			treeDataSource,
+			this.viewRoot.dataSource,
 			{
 				horizontalScrolling: false,
 				setRowLineHeight: false,
 				transformOptimization: false,
-				filter: new SCMTreeFilter(),
+				filter: this.viewRoot.filter,
 				dnd: new SCMTreeDragAndDrop(this.instantiationService),
 				identityProvider: new SCMResourceIdentityProvider(),
-				sorter: new SCMTreeSorter(() => this.viewMode, () => this.viewSortKey),
+				sorter: this.viewRoot.filter,
 				keyboardNavigationLabelProvider: this.instantiationService.createInstance(SCMTreeKeyboardNavigationLabelProvider, () => this.viewMode),
 				overrideStyles: this.getLocationBasedColors().listOverrideStyles,
 				compressionEnabled: compressionEnabled.get(),

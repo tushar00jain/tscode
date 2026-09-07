@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Emitter, Event } from './event.js';
-import { DisposableStore, IDisposable } from './lifecycle.js';
+import { DisposableStore, type IDisposable } from './lifecycle.js';
 
 export interface CancellationToken {
 

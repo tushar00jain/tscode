@@ -48,6 +48,7 @@ import { IOpenerService } from '../../../../../platform/opener/common/opener.js'
 import { IUriIdentityService } from '../../../../../platform/uriIdentity/common/uriIdentity.js';
 import { EditorResourceAccessor, SideBySideEditor } from '../../../../common/editor.js';
 import { IExplorerService, IExplorerView } from '../files.js';
+import { ExplorerViewRoot } from '../../tauri/explorerViewRoot.js';
 import { Codicon } from '../../../../../base/common/codicons.js';
 import { ICommandService } from '../../../../../platform/commands/common/commands.js';
 import { IEditorResolverService } from '../../../../services/editor/common/editorResolverService.js';
@@ -156,6 +157,7 @@ export class ExplorerView extends ViewPane implements IExplorerView {
 
 	private tree!: WorkbenchCompressibleAsyncDataTree<ExplorerItem | ExplorerItem[], ExplorerItem, FuzzyScore>;
 	private filter!: FilesFilter;
+	private viewRoot!: ExplorerViewRoot;
 	private findProvider!: ExplorerFindProvider;
 
 	private resourceContext: ResourceContextKey;
@@ -296,7 +298,7 @@ export class ExplorerView extends ViewPane implements IExplorerView {
 
 	protected override layoutBody(height: number, width: number): void {
 		super.layoutBody(height, width);
-		this.tree.layout(height, width);
+		this.tree.layout(height - this.viewRoot.height, width);
 	}
 
 	protected override renderBody(container: HTMLElement): void {
@@ -461,6 +463,8 @@ export class ExplorerView extends ViewPane implements IExplorerView {
 
 		const getFileNestingSettings = (item?: ExplorerItem) => this.configurationService.getValue<IFilesConfiguration>({ resource: item?.root.resource }).explorer.fileNesting;
 
+		this.viewRoot = this._register(this.instantiationService.createInstance(ExplorerViewRoot, this, () => this.tree, container, isCompressionEnabled, this.filter, this.instantiationService.createInstance(FileSorter)));
+
 		this.tree = this.instantiationService.createInstance(WorkbenchCompressibleAsyncDataTree<ExplorerItem | ExplorerItem[], ExplorerItem, FuzzyScore>, 'FileExplorer', container, new ExplorerDelegate(), new ExplorerCompressionDelegate(), [this.renderer],
 			this.instantiationService.createInstance(ExplorerDataSource, this.filter, this.findProvider), {
 			compressionEnabled: isCompressionEnabled(),
@@ -483,8 +487,8 @@ export class ExplorerView extends ViewPane implements IExplorerView {
 				}
 			},
 			multipleSelectionSupport: true,
-			filter: this.filter,
-			sorter: this.instantiationService.createInstance(FileSorter),
+			filter: this.viewRoot.filter,
+			sorter: this.viewRoot.filter,
 			dnd: this.instantiationService.createInstance(FileDragAndDrop, (item) => this.isItemCollapsed(item)),
 			collapseByDefault: (e) => {
 				if (e instanceof ExplorerItem) {
@@ -784,6 +788,7 @@ export class ExplorerView extends ViewPane implements IExplorerView {
 			// Display roots only when multi folder workspace
 			input = roots;
 		}
+		input = this.viewRoot.rootInput(input);
 
 		let viewState: IAsyncDataTreeViewState | undefined;
 		if (this.tree?.getInput()) {

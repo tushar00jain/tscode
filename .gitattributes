@@ -1,9 +1,9 @@
-# LF everywhere, including in the working tree on Windows. This branch is the pristine
-# upstream baseline, compared byte-for-byte against a VS Code checkout, so a worktree that
-# checked out CRLF would make every file here look modified and silently disable both the
-# divergence audit and the copy script's protection rule.
-#
-# This is the one file on `vendor` the copy script does not produce. It has to be here
-# rather than only on `main`, because Git reads attributes from the branch being checked
-# out, and a fresh worktree on `vendor` has no other source of them.
+# LF everywhere, including in the working tree on Windows, so the vendored `src/vs` tree is
+# uniformly LF however a given VS Code checkout is configured. The copy script does not
+# depend on that: it normalizes CRLF to LF on both sides before deciding whether a
+# destination file is ours, and writes LF for the source extensions it copies as text. See
+# docs/UPGRADING.md, "Line endings".
 * text=auto eol=lf
+
+# The hook's shebang only survives on Windows with LF endings.
+.githooks/* text eol=lf

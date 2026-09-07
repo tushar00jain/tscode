@@ -17,7 +17,6 @@ import type { IProgress, IProgressCompositeOptions, IProgressDialogOptions, IPro
 import type { ITextEditorOptions } from '../../platform/editor/common/editor.js';
 import type { IFolderToOpen, IWorkspaceToOpen } from '../../platform/window/common/window.js';
 import type { EditorGroupLayout } from '../services/editor/common/editorGroupsService.js';
-import type { IEmbedderTerminalOptions } from '../services/terminal/common/embedderTerminalService.js';
 import type { IAuthenticationProvider } from '../services/authentication/common/authentication.js';
 
 /**
@@ -92,17 +91,6 @@ export interface IWorkbench {
 			options: IProgressOptions | IProgressDialogOptions | IProgressNotificationOptions | IProgressWindowOptions | IProgressCompositeOptions,
 			task: (progress: IProgress<IProgressStep>) => Promise<R>
 		): Promise<R>;
-
-		/**
-		 * Creates a terminal with limited capabilities that is intended for
-		 * writing output from the embedder before the workbench has finished
-		 * loading. When an embedder terminal is created it will automatically
-		 * show to the user.
-		 *
-		 * @param options The definition of the terminal, this is similar to
-		 * `ExtensionTerminalOptions` in the extension API.
-		 */
-		createTerminal(options: IEmbedderTerminalOptions): Promise<void>;
 
 		/**
 		 * Show an information message to users. Optionally provide an array of items which will be presented as

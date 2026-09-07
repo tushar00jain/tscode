@@ -1,15 +1,13 @@
-/*---------------------------------------------------------------------------------------------
+﻿/*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
 import { Event } from '../../../../base/common/event.js';
 import { Disposable, IDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
-import { raceTimeout } from '../../../../base/common/async.js';
 import Severity from '../../../../base/common/severity.js';
 import { URI } from '../../../../base/common/uri.js';
 import { IMessagePassingProtocol } from '../../../../base/parts/ipc/common/ipc.js';
-import { IAssignmentService } from '../../../../platform/assignment/common/assignment.js';
 import { getExtensionId, getGalleryExtensionId } from '../../../../platform/extensionManagement/common/extensionManagementUtil.js';
 import { ImplicitActivationEvents } from '../../../../platform/extensionManagement/common/implicitActivationEvents.js';
 import { ExtensionIdentifier, ExtensionIdentifierMap, ExtensionIdentifierSet, ExtensionType, IExtension, IExtensionContributions, IExtensionDescription, TargetPlatform } from '../../../../platform/extensions/common/extensions.js';
@@ -399,25 +397,6 @@ export const enabledApiProposalsFallbackExperimentName = 'extensionEnabledApiPro
  * Experiment value that explicitly blocks all proposals reaching the fallback.
  */
 export const enabledApiProposalsFallbackNone = 'none';
-
-/**
- * Resolves the value of the {@link enabledApiProposalsFallbackExperimentName}-experiment, or
- * `undefined` when it does not apply (non-`stable` quality) or cannot be read in time.
- */
-export async function resolveEnabledApiProposalsFallbackExperiment(assignmentService: IAssignmentService, quality: string | undefined): Promise<string | undefined> {
-	if (quality !== 'stable') {
-		return undefined;
-	}
-	try {
-		// This runs while building the ext host init data (whose promise has no error handling) and
-		// the assignment service can block on its initial network fetch, so cap the wait and swallow
-		// errors: falling back to `undefined` keeps today's behavior and the value is read from the
-		// cache on the next start.
-		return await raceTimeout(assignmentService.getTreatment<string>(enabledApiProposalsFallbackExperimentName), 5000);
-	} catch {
-		return undefined;
-	}
-}
 
 /**
  * Enables the {@link enabledApiProposalsFallbackExperimentName}-experiment which can grant proposed

@@ -41,10 +41,7 @@ import { GroupsOrder, IEditorGroup, IEditorGroupsService } from '../../../servic
 import { IEditorService } from '../../../services/editor/common/editorService.js';
 import { IWorkbenchEnvironmentService } from '../../../services/environment/common/environmentService.js';
 import { IEditorProgressService } from '../../../../platform/progress/common/progress.js';
-import { InstallRecommendedExtensionAction } from '../../extensions/browser/extensionsActions.js';
 import { INotebookService } from '../common/notebookService.js';
-import { IExtensionsWorkbenchService } from '../../extensions/common/extensions.js';
-import { EnablementState } from '../../../services/extensionManagement/common/extensionManagement.js';
 import { IWorkingCopyBackupService } from '../../../services/workingCopy/common/workingCopyBackup.js';
 import { streamToBuffer } from '../../../../base/common/buffer.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
@@ -105,7 +102,6 @@ export class NotebookEditor extends EditorPane implements INotebookEditorPane, I
 		@ITextResourceConfigurationService configurationService: ITextResourceConfigurationService,
 		@IEditorProgressService private readonly _editorProgressService: IEditorProgressService,
 		@INotebookService private readonly _notebookService: INotebookService,
-		@IExtensionsWorkbenchService private readonly _extensionsWorkbenchService: IExtensionsWorkbenchService,
 		@IWorkingCopyBackupService private readonly _workingCopyBackupService: IWorkingCopyBackupService,
 		@ILogService private readonly logService: ILogService,
 		@IPreferencesService private readonly _preferencesService: IPreferencesService,
@@ -319,37 +315,7 @@ export class NotebookEditor extends EditorPane implements INotebookEditorPane, I
 					throw new Error(localize('fail.noEditor', "Cannot open resource with notebook editor type '{0}', please check if you have the right extension installed and enabled.", input.viewType));
 				}
 
-				await this._extensionsWorkbenchService.whenInitialized;
-				const extensionInfo = this._extensionsWorkbenchService.local.find(e => e.identifier.id === knownProvider);
-
 				throw createEditorOpenError(new Error(localize('fail.noEditor.extensionMissing', "Cannot open resource with notebook editor type '{0}', please check if you have the right extension installed and enabled.", input.viewType)), [
-					toAction({
-						id: 'workbench.notebook.action.installOrEnableMissing', label:
-							extensionInfo
-								? localize('notebookOpenEnableMissingViewType', "Enable extension for '{0}'", input.viewType)
-								: localize('notebookOpenInstallMissingViewType', "Install extension for '{0}'", input.viewType)
-						, run: async () => {
-							const d = this._notebookService.onAddViewType(viewType => {
-								if (viewType === input.viewType) {
-									// serializer is registered, try to open again
-									this._editorService.openEditor({ resource: input.resource });
-									d.dispose();
-								}
-							});
-							const extensionInfo = this._extensionsWorkbenchService.local.find(e => e.identifier.id === knownProvider);
-
-							try {
-								if (extensionInfo) {
-									await this._extensionsWorkbenchService.setEnablement(extensionInfo, extensionInfo.enablementState === EnablementState.DisabledWorkspace ? EnablementState.EnabledWorkspace : EnablementState.EnabledGlobally);
-								} else {
-									await this._instantiationService.createInstance(InstallRecommendedExtensionAction, knownProvider).run();
-								}
-							} catch (ex) {
-								this.logService.error(`Failed to install or enable extension ${knownProvider}`, ex);
-								d.dispose();
-							}
-						}
-					}),
 					toAction({
 						id: 'workbench.notebook.action.openAsText', label: localize('notebookOpenAsText', "Open As Text"), run: async () => {
 							const backup = await this._workingCopyBackupService.resolve({ resource: input.resource, typeId: NotebookWorkingCopyTypeIdentifier.create(input.viewType) });

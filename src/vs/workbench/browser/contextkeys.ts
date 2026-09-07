@@ -137,17 +137,19 @@ export class WorkbenchContextKeysHandler extends Disposable {
 
 		// Opening folder support: support for opening a folder workspace
 		// (e.g. "Open Folder...") is limited in web when not connected
-		// to a remote.
+		// to a remote. tscode's `file` provider is the Tauri backend, which
+		// reaches the real filesystem — the capability `isNative` stands for.
 		this.openFolderWorkspaceSupportContext = OpenFolderWorkspaceSupportContext.bindTo(this.contextKeyService);
-		this.openFolderWorkspaceSupportContext.set(isNative || typeof this.environmentService.remoteAuthority === 'string');
+		this.openFolderWorkspaceSupportContext.set(true);
 
 		// Empty workspace support: empty workspaces require built-in file system
 		// providers to be available that allow to enter a workspace or open loose
 		// files. This condition is met:
 		// - desktop: always
 		// -     web: only when connected to a remote
+		// -  tscode: always, for the same reason as opening a folder
 		this.emptyWorkspaceSupportContext = EmptyWorkspaceSupportContext.bindTo(this.contextKeyService);
-		this.emptyWorkspaceSupportContext.set(isNative || typeof this.environmentService.remoteAuthority === 'string');
+		this.emptyWorkspaceSupportContext.set(true);
 
 		// Entering a multi root workspace support: support for entering a multi-root
 		// workspace (e.g. "Open Workspace from File...", "Duplicate Workspace", "Save Workspace")

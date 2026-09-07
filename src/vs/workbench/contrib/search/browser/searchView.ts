@@ -86,6 +86,7 @@ import { searchMatchComparer } from './searchCompare.js';
 import { AIFolderMatchWorkspaceRootImpl } from './AISearch/aiSearchModel.js';
 import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
 import { forcedExpandRecursively } from './searchActionsTopBar.js';
+import { SearchViewRoot } from '../tauri/searchViewRoot.js';
 
 const $ = dom.$;
 
@@ -172,6 +173,7 @@ export class SearchView extends ViewPane {
 	private inputPatternExcludes!: ExcludePatternInputWidget;
 	private inputPatternIncludes!: IncludePatternInputWidget;
 	private resultsElement!: HTMLElement;
+	private viewRoot!: SearchViewRoot;
 
 	private currentSelectedFileMatch: ISearchTreeFileMatch | undefined;
 	private readonly currentEditorCursorListener = this._register(new MutableDisposable());
@@ -949,6 +951,7 @@ export class SearchView extends ViewPane {
 
 	private createSearchResultsView(container: HTMLElement): void {
 		this.resultsElement = dom.append(container, $('.results.show-file-icons.file-icon-themable-tree'));
+		this.viewRoot = this._register(this.instantiationService.createInstance(SearchViewRoot, () => this.tree, this.resultsElement, () => this.reLayout()));
 		const delegate = this.instantiationService.createInstance(SearchDelegate);
 
 		const identityProvider: IIdentityProvider<RenderableMatch> = {
@@ -981,6 +984,7 @@ export class SearchView extends ViewPane {
 			this.searchDataSource,
 			{
 				identityProvider,
+				filter: this.viewRoot.filter,
 				accessibilityProvider: this.treeAccessibilityProvider,
 				dnd: this.instantiationService.createInstance(ResourceListDnDHandler, element => {
 					if (isSearchTreeFileMatch(element)) {
@@ -1379,7 +1383,7 @@ export class SearchView extends ViewPane {
 
 		const widgetHeight = dom.getTotalHeight(this.searchWidgetsContainerElement);
 		const messagesHeight = dom.getTotalHeight(this.messagesElement);
-		this.tree.layout(this.size.height - widgetHeight - messagesHeight, this.size.width - 28);
+		this.tree.layout(this.size.height - widgetHeight - messagesHeight - this.viewRoot.height, this.size.width - 28);
 	}
 
 	protected override layoutBody(height: number, width: number): void {

@@ -6,9 +6,9 @@
  */
 
 /* eslint-disable no-bitwise -- intentional bitwise ops for DAG rendering */
-import type {Hash} from '../types';
+import type {Hash} from './types.js';
 
-import {assert} from '../utils';
+import {assert} from '../../../../base/common/assert.js';
 
 /* eslint no-bitwise: 0 */
 /* Translated from fbcode/eden/scm/lib/renderdag/src/render.rs */

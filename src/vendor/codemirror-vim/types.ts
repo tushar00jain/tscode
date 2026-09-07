@@ -414,12 +414,6 @@ export type PromptOptions = {
 }
 
 
-declare global {
-    function isNaN(v: any): v is Exclude<typeof v, number>;
-    interface String {
-        trimStart(): string
-    }
-}
 /**
  * The editor API the vim engine drives. This is the CM5-style editor
  * interface; @replit/codemirror-vim's adapter implements it on top of

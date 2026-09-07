@@ -6,10 +6,10 @@
  */
 
 /* eslint-disable no-bitwise -- intentional bitwise ops for DAG rendering */
-import type {Hash} from '../types';
-import type {Ancestor} from './render';
+import type {Hash} from './types.js';
+import type {Ancestor} from './render.js';
 
-import {LinkLine, NodeLine, PadLine, Renderer} from './render';
+import {LinkLine, NodeLine, PadLine, Renderer} from './render.js';
 
 /* eslint no-bitwise: 0 */
 /* Translated from fbcode/eden/scm/lib/renderdag/src/box_drawing.rs */

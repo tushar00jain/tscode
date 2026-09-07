@@ -34,6 +34,8 @@ export const KEYBINDING_CONTEXT_WEBVIEW_FIND_WIDGET_FOCUSED = new RawContextKey<
  */
 export const KEYBINDING_CONTEXT_WEBVIEW_FIND_WIDGET_ENABLED = new RawContextKey<boolean>('webviewFindWidgetEnabled', false);
 
+export const PreventDefaultContextMenuItemsContextKeyName = 'preventDefaultContextMenuItems';
+
 export const IWebviewService = createDecorator<IWebviewService>('webviewService');
 
 export interface IWebviewService {

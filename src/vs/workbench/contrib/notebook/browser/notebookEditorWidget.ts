@@ -100,7 +100,7 @@ import { DropIntoEditorController } from '../../../../editor/contrib/dropOrPaste
 import { CopyPasteController } from '../../../../editor/contrib/dropOrPasteInto/browser/copyPasteController.js';
 import { NotebookStickyScroll } from './viewParts/notebookEditorStickyScroll.js';
 import { PixelRatio } from '../../../../base/browser/pixelRatio.js';
-import { PreventDefaultContextMenuItemsContextKeyName } from '../../webview/browser/webview.contribution.js';
+import { PreventDefaultContextMenuItemsContextKeyName } from '../../webview/browser/webview.js';
 import { NotebookAccessibilityProvider } from './notebookAccessibilityProvider.js';
 import { NotebookHorizontalTracker } from './viewParts/notebookHorizontalTracker.js';
 import { NotebookCellEditorPool } from './view/notebookCellEditorPool.js';

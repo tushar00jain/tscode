@@ -8,6 +8,7 @@ import * as platform from './platform.js';
 import { equalsIgnoreCase, startsWithIgnoreCase } from './strings.js';
 import { URI } from './uri.js';
 import * as paths from './path.js';
+import { convertFileSrc, isTauri } from '@tauri-apps/api/core';
 
 export namespace Schemas {
 
@@ -300,6 +301,21 @@ class FileAccessImpl {
 		// Handle remote URIs via `RemoteAuthorities`
 		if (uri.scheme === Schemas.vscodeRemote) {
 			return RemoteAuthorities.rewrite(uri);
+		}
+
+		// Convert to Tauri's asset protocol..
+		if (
+			// ...only ever for `file` resources
+			uri.scheme === Schemas.file &&
+			// ...and only where Tauri injected its internals: the webview refuses
+			// `file:` URIs exactly as Chromium does on upstream's desktop, and the
+			// asset protocol is the handler that stands in for `vscode-file` there.
+			isTauri()
+		) {
+			// `convertFileSrc` owns the per-platform shape of that URL
+			// (`asset://localhost/…` vs `https://asset.localhost/…`), so the scheme
+			// is decided in one place — Tauri's.
+			return URI.parse(convertFileSrc(uri.fsPath));
 		}
 
 		// Convert to `vscode-file` resource..

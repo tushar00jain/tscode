@@ -9,9 +9,7 @@ import { equals as equalArray } from '../../../../base/common/arrays.js';
 import { Color } from '../../../../base/common/color.js';
 import { onUnexpectedError } from '../../../../base/common/errors.js';
 import { Disposable, DisposableStore, IDisposable } from '../../../../base/common/lifecycle.js';
-import { FileAccess, nodeModulesAsarUnpackedPath, nodeModulesPath } from '../../../../base/common/network.js';
 import { IObservable, observableFromEvent } from '../../../../base/common/observable.js';
-import { isWeb } from '../../../../base/common/platform.js';
 import * as resources from '../../../../base/common/resources.js';
 import * as types from '../../../../base/common/types.js';
 import { URI } from '../../../../base/common/uri.js';
@@ -27,7 +25,6 @@ import { ILogService } from '../../../../platform/log/common/log.js';
 import { INotificationService } from '../../../../platform/notification/common/notification.js';
 import { IProgressService, ProgressLocation } from '../../../../platform/progress/common/progress.js';
 import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
-import { IWorkbenchEnvironmentService } from '../../environment/common/environmentService.js';
 import { ExtensionMessageCollector, IExtensionPointUser } from '../../extensions/common/extensionsRegistry.js';
 import { ITextMateTokenizationService } from './textMateTokenizationFeature.js';
 import { TextMateTokenizationSupport } from './tokenizationSupport/textMateTokenizationSupport.js';
@@ -67,7 +64,6 @@ export class TextMateTokenizationFeature extends Disposable implements ITextMate
 		@ILogService private readonly _logService: ILogService,
 		@IConfigurationService private readonly _configurationService: IConfigurationService,
 		@IProgressService private readonly _progressService: IProgressService,
-		@IWorkbenchEnvironmentService private readonly _environmentService: IWorkbenchEnvironmentService,
 		@IInstantiationService private readonly _instantiationService: IInstantiationService,
 		@ITelemetryService private readonly _telemetryService: ITelemetryService,
 	) {
@@ -392,18 +388,11 @@ export class TextMateTokenizationFeature extends Disposable implements ITextMate
 	}
 
 	private async _loadVSCodeOnigurumaWASM(): Promise<Response | ArrayBuffer> {
-		if (isWeb) {
-			const response = await fetch(resolveAmdNodeModulePath('vscode-oniguruma', 'release/onig.wasm'));
-			// Using the response directly only works if the server sets the MIME type 'application/wasm'.
-			// Otherwise, a TypeError is thrown when using the streaming compiler.
-			// We therefore use the non-streaming compiler :(.
-			return await response.arrayBuffer();
-		} else {
-			const response = await fetch(this._environmentService.isBuilt
-				? FileAccess.asBrowserUri(`${nodeModulesAsarUnpackedPath}/vscode-oniguruma/release/onig.wasm`).toString(true)
-				: FileAccess.asBrowserUri(`${nodeModulesPath}/vscode-oniguruma/release/onig.wasm`).toString(true));
-			return response;
-		}
+		const response = await fetch(resolveAmdNodeModulePath('vscode-oniguruma', 'release/onig.wasm'));
+		// Using the response directly only works if the server sets the MIME type 'application/wasm'.
+		// Otherwise, a TypeError is thrown when using the streaming compiler.
+		// We therefore use the non-streaming compiler :(.
+		return await response.arrayBuffer();
 	}
 
 	private _reportTokenizationTime(timeMs: number, languageId: string, sourceExtensionId: string | undefined, lineLength: number, fromWorker: boolean, isRandomSample: boolean): void {

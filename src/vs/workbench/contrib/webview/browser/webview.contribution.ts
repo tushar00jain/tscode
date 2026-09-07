@@ -10,7 +10,7 @@ import * as nls from '../../../../nls.js';
 import { MenuId, MenuRegistry } from '../../../../platform/actions/common/actions.js';
 import { ContextKeyExpr } from '../../../../platform/contextkey/common/contextkey.js';
 import { AccessibleViewRegistry } from '../../../../platform/accessibility/browser/accessibleViewRegistry.js';
-import { IWebviewService, IWebview } from './webview.js';
+import { IWebviewService, IWebview, PreventDefaultContextMenuItemsContextKeyName } from './webview.js';
 import { WebviewInput } from '../../webviewPanel/browser/webviewEditorInput.js';
 import { IEditorService } from '../../../services/editor/common/editorService.js';
 import { WebviewFindAccessibilityHelp } from './webviewFindAccessibilityHelp.js';
@@ -47,8 +47,6 @@ overrideCommandForWebview(SelectAllCommand, webview => webview.selectAll());
 overrideCommandForWebview(CopyAction, webview => webview.copy());
 overrideCommandForWebview(PasteAction, webview => webview.paste());
 overrideCommandForWebview(CutAction, webview => webview.cut());
-
-export const PreventDefaultContextMenuItemsContextKeyName = 'preventDefaultContextMenuItems';
 
 if (CutAction) {
 	MenuRegistry.appendMenuItem(MenuId.WebviewContext, {

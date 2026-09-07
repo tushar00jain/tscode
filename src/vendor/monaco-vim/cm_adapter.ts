@@ -9,8 +9,8 @@ import {
   Selection,
   SelectionDirection,
   editor as monacoEditor,
-} from "monaco-editor/esm/vs/editor/editor.api";
-import { ShiftCommand } from "monaco-editor/esm/vs/editor/common/commands/shiftCommand";
+} from "../../vs/workbench/contrib/vim/tauri/monacoEditorApi.js";
+import { ShiftCommand } from "../../vs/editor/common/commands/shiftCommand.js";
 const VerticalRevealType = {
   Bottom: 4,
 };

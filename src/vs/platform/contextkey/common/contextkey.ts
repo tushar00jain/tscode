@@ -4,13 +4,13 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { CharCode } from '../../../base/common/charCode.js';
-import { Event } from '../../../base/common/event.js';
+import type { Event } from '../../../base/common/event.js';
 import { isChrome, isEdge, isFirefox, isLinux, isMacintosh, isSafari, isWeb, isWindows } from '../../../base/common/platform.js';
 import { isFalsyOrWhitespace } from '../../../base/common/strings.js';
-import { Scanner, LexingError, Token, TokenType } from './scanner.js';
+import { Scanner, type LexingError, type Token, TokenType } from './scanner.js';
 import { createDecorator } from '../../instantiation/common/instantiation.js';
 import { localize } from '../../../nls.js';
-import { IDisposable } from '../../../base/common/lifecycle.js';
+import type { IDisposable } from '../../../base/common/lifecycle.js';
 import { illegalArgument } from '../../../base/common/errors.js';
 
 const CONSTANT_VALUES = new Map<string, boolean>();

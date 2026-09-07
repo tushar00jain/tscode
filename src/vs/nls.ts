@@ -3,16 +3,19 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+/**
+ * tscode ships English only and runs no NLS build step, so there is no message
+ * bundle to look a key up in: `localize` formats the message it is handed. The
+ * exported shape is upstream's, since the copied tree imports it verbatim.
+ */
+
 export function getNLSMessages(): string[] {
-	return globalThis._VSCODE_NLS_MESSAGES;
+	return [];
 }
 
 export function getNLSLanguage(): string | undefined {
-	return globalThis._VSCODE_NLS_LANGUAGE;
+	return undefined;
 }
-
-declare const document: { location?: { hash?: string } } | undefined;
-const isPseudo = getNLSLanguage() === 'pseudo' || (typeof document !== 'undefined' && document.location && typeof document.location.hash === 'string' && document.location.hash.indexOf('pseudo=true') >= 0);
 
 export interface ILocalizeInfo {
 	key: string;
@@ -25,30 +28,21 @@ export interface ILocalizedString {
 }
 
 function _format(message: string, args: (string | number | boolean | undefined | null)[]): string {
-	let result: string;
-
 	if (args.length === 0) {
-		result = message;
-	} else {
-		result = message.replace(/\{(\d+)\}/g, (match, rest) => {
-			const index = rest[0];
-			const arg = args[index];
-			let result = match;
-			if (typeof arg === 'string') {
-				result = arg;
-			} else if (typeof arg === 'number' || typeof arg === 'boolean' || arg === void 0 || arg === null) {
-				result = String(arg);
-			}
-			return result;
-		});
+		return message;
 	}
 
-	if (isPseudo) {
-		// FF3B and FF3D is the Unicode zenkaku representation for [ and ]
-		result = '\uFF3B' + result.replace(/[aouei]/g, '$&$&') + '\uFF3D';
-	}
-
-	return result;
+	return message.replace(/\{(\d+)\}/g, (match, rest) => {
+		const index = rest[0];
+		const arg = args[index];
+		let result = match;
+		if (typeof arg === 'string') {
+			result = arg;
+		} else if (typeof arg === 'number' || typeof arg === 'boolean' || arg === void 0 || arg === null) {
+			result = String(arg);
+		}
+		return result;
+	});
 }
 
 /**
@@ -79,30 +73,8 @@ export function localize(info: ILocalizeInfo, message: string, ...args: (string 
  */
 export function localize(key: string, message: string, ...args: (string | number | boolean | undefined | null)[]): string;
 
-/**
- * @skipMangle
- */
-export function localize(data: ILocalizeInfo | string /* | number when built */, message: string /* | null when built */, ...args: (string | number | boolean | undefined | null)[]): string {
-	if (typeof data === 'number') {
-		return _format(lookupMessage(data, message), args);
-	}
+export function localize(data: ILocalizeInfo | string, message: string, ...args: (string | number | boolean | undefined | null)[]): string {
 	return _format(message, args);
-}
-
-/**
- * Only used when built: Looks up the message in the global NLS table.
- * This table is being made available as a global through bootstrapping
- * depending on the target context.
- */
-function lookupMessage(index: number, fallback: string | null): string {
-	const message = getNLSMessages()?.[index];
-	if (typeof message !== 'string') {
-		if (typeof fallback === 'string') {
-			return fallback;
-		}
-		throw new Error(`!!! NLS MISSING: ${index} !!!`);
-	}
-	return message;
 }
 
 /**
@@ -135,23 +107,10 @@ export function localize2(info: ILocalizeInfo, message: string, ...args: (string
  */
 export function localize2(key: string, message: string, ...args: (string | number | boolean | undefined | null)[]): ILocalizedString;
 
-/**
- * @skipMangle
- */
-export function localize2(data: ILocalizeInfo | string /* | number when built */, originalMessage: string, ...args: (string | number | boolean | undefined | null)[]): ILocalizedString {
-	let message: string;
-	if (typeof data === 'number') {
-		message = lookupMessage(data, originalMessage);
-	} else {
-		message = originalMessage;
-	}
+export function localize2(data: ILocalizeInfo | string, originalMessage: string, ...args: (string | number | boolean | undefined | null)[]): ILocalizedString {
+	const value = _format(originalMessage, args);
 
-	const value = _format(message, args);
-
-	return {
-		value,
-		original: originalMessage === message ? value : _format(originalMessage, args)
-	};
+	return { value, original: value };
 }
 
 export interface INLSLanguagePackConfiguration {
@@ -217,28 +176,4 @@ export interface INLSConfiguration {
 	readonly locale: string;
 	/** @deprecated */
 	readonly availableLanguages: Record<string, string>;
-	/** @deprecated */
-	readonly _languagePackSupport?: boolean;
-	/** @deprecated */
-	readonly _languagePackId?: string;
-	/** @deprecated */
-	readonly _translationsConfigFile?: string;
-	/** @deprecated */
-	readonly _cacheRoot?: string;
-	/** @deprecated */
-	readonly _resolvedLanguagePackCoreLocation?: string;
-	/** @deprecated */
-	readonly _corruptedFile?: string;
 }
-
-export interface ILanguagePack {
-	readonly hash: string;
-	readonly label: string | undefined;
-	readonly extensions: {
-		readonly extensionIdentifier: { readonly id: string; readonly uuid?: string };
-		readonly version: string;
-	}[];
-	readonly translations: Record<string, string | undefined>;
-}
-
-export type ILanguagePacks = Record<string, ILanguagePack | undefined>;

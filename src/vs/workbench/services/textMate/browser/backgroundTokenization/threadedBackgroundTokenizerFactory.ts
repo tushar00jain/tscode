@@ -4,15 +4,14 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { DisposableStore, IDisposable, toDisposable } from '../../../../../base/common/lifecycle.js';
-import { AppResourcePath, FileAccess, nodeModulesAsarPath, nodeModulesPath } from '../../../../../base/common/network.js';
+import { resolveAmdNodeModulePath } from '../../../../../amdX.js';
+import { FileAccess } from '../../../../../base/common/network.js';
 import { IObservable } from '../../../../../base/common/observable.js';
-import { isWeb } from '../../../../../base/common/platform.js';
 import { URI, UriComponents } from '../../../../../base/common/uri.js';
 import { IBackgroundTokenizationStore, IBackgroundTokenizer } from '../../../../../editor/common/languages.js';
 import { ILanguageService } from '../../../../../editor/common/languages/language.js';
 import { ITextModel } from '../../../../../editor/common/model.js';
 import { IConfigurationService } from '../../../../../platform/configuration/common/configuration.js';
-import { IEnvironmentService } from '../../../../../platform/environment/common/environment.js';
 import { IExtensionResourceLoaderService } from '../../../../../platform/extensionResourceLoader/common/extensionResourceLoader.js';
 import { INotificationService } from '../../../../../platform/notification/common/notification.js';
 import { ITelemetryService } from '../../../../../platform/telemetry/common/telemetry.js';
@@ -26,6 +25,7 @@ import { IWebWorkerService } from '../../../../../platform/webWorker/browser/web
 import { IWebWorkerClient, Proxied } from '../../../../../base/common/worker/webWorker.js';
 import { ISerializedAnnotation } from '../../../../../editor/common/model/tokens/annotations.js';
 import { IFontTokenOption } from '../../../../../editor/common/textModelEvents.js';
+import textMateWorkerUrl from './worker/textMateTokenizationWorker.workerMain.js?worker&url';
 
 export class ThreadedBackgroundTokenizerFactory implements IDisposable {
 	private static _reportedMismatchingTokens = false;
@@ -45,7 +45,6 @@ export class ThreadedBackgroundTokenizerFactory implements IDisposable {
 		@IExtensionResourceLoaderService private readonly _extensionResourceLoaderService: IExtensionResourceLoaderService,
 		@IConfigurationService private readonly _configurationService: IConfigurationService,
 		@ILanguageService private readonly _languageService: ILanguageService,
-		@IEnvironmentService private readonly _environmentService: IEnvironmentService,
 		@INotificationService private readonly _notificationService: INotificationService,
 		@ITelemetryService private readonly _telemetryService: ITelemetryService,
 		@IWebWorkerService private readonly _webWorkerService: IWebWorkerService,
@@ -129,20 +128,17 @@ export class ThreadedBackgroundTokenizerFactory implements IDisposable {
 	}
 
 	private async _createWorkerProxy(): Promise<Proxied<TextMateTokenizationWorker> | null> {
-		const onigurumaModuleLocation: AppResourcePath = `${nodeModulesPath}/vscode-oniguruma`;
-		const onigurumaModuleLocationAsar: AppResourcePath = `${nodeModulesAsarPath}/vscode-oniguruma`;
-
-		const useAsar = this._environmentService.isBuilt && !isWeb;
-		const onigurumaLocation: AppResourcePath = useAsar ? onigurumaModuleLocationAsar : onigurumaModuleLocation;
-		const onigurumaWASM: AppResourcePath = `${onigurumaLocation}/release/onig.wasm`;
-
 		const createData: ICreateData = {
 			grammarDefinitions: this._grammarDefinitions,
-			onigurumaWASMUri: FileAccess.asBrowserUri(onigurumaWASM).toString(true),
+			onigurumaWASMUri: resolveAmdNodeModulePath('vscode-oniguruma', 'release/onig.wasm'),
 		};
 		const worker = this._worker = this._webWorkerService.createWorkerClient<TextMateTokenizationWorker>(
 			new WebWorkerDescriptor({
-				esmModuleLocation: FileAccess.asBrowserUri('vs/workbench/services/textMate/browser/backgroundTokenization/worker/textMateTokenizationWorker.workerMain.js'),
+				// Lazy, as upstream's `EditorWorkerService.workerDescriptor` has it: there is no
+				// module id to resolve in a bundle, so evaluating it eagerly throws before the
+				// bundler location below is ever read.
+				esmModuleLocation: () => FileAccess.asBrowserUri('vs/workbench/services/textMate/browser/backgroundTokenization/worker/textMateTokenizationWorker.workerMain.js'),
+				esmModuleLocationBundler: () => new URL(textMateWorkerUrl, globalThis.location.href),
 				label: 'TextMateWorker'
 			})
 		);

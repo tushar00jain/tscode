@@ -3,8 +3,6 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { localize } from '../../../../../nls.js';
-import { toAction } from '../../../../../base/common/actions.js';
 import { createErrorWithActions } from '../../../../../base/common/errorMessage.js';
 import { Emitter, Event } from '../../../../../base/common/event.js';
 import * as glob from '../../../../../base/common/glob.js';
@@ -37,7 +35,6 @@ import { INotebookSerializer, INotebookService, SimpleNotebookProviderInfo } fro
 import { DiffEditorInputFactoryFunction, EditorInputFactoryFunction, EditorInputFactoryObject, IEditorResolverService, IEditorType, RegisteredEditorPriority, RegisteredEditorRegistrationInfo, UntitledEditorInputFactoryFunction, type MergeEditorInputFactoryFunction } from '../../../../services/editor/common/editorResolverService.js';
 import { IExtensionService, isProposedApiEnabled } from '../../../../services/extensions/common/extensions.js';
 import { IExtensionPointUser } from '../../../../services/extensions/common/extensionsRegistry.js';
-import { InstallRecommendedExtensionAction } from '../../../extensions/browser/extensionsActions.js';
 import { IUriIdentityService } from '../../../../../platform/uriIdentity/common/uriIdentity.js';
 import { INotebookDocument, INotebookDocumentService } from '../../../../services/notebook/common/notebookDocumentService.js';
 import { MergeEditorInput } from '../../../mergeEditor/browser/mergeEditorInput.js';
@@ -770,17 +767,7 @@ export class NotebookService extends Disposable implements INotebookService {
 	async withNotebookDataProvider(viewType: string): Promise<SimpleNotebookProviderInfo> {
 		const selected = this.notebookProviderInfoStore.get(viewType);
 		if (!selected) {
-			const knownProvider = this.getViewTypeProvider(viewType);
-
-			const actions = knownProvider ? [
-				toAction({
-					id: 'workbench.notebook.action.installMissingViewType', label: localize('notebookOpenInstallMissingViewType', "Install extension for '{0}'", viewType), run: async () => {
-						await this._instantiationService.createInstance(InstallRecommendedExtensionAction, knownProvider).run();
-					}
-				})
-			] : [];
-
-			throw createErrorWithActions(`UNKNOWN notebook type '${viewType}'`, actions);
+			throw createErrorWithActions(`UNKNOWN notebook type '${viewType}'`, []);
 		}
 		await this.canResolve(selected.id);
 		const result = this._notebookProviders.get(selected.id);

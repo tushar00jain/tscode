@@ -38,6 +38,7 @@ import { StringEdit } from '../../common/core/edits/stringEdit.js';
 import { OffsetRange } from '../../common/core/ranges/offsetRange.js';
 import { FileAccess } from '../../../base/common/network.js';
 import { isCompletionsEnabledWithTextResourceConfig } from '../../common/services/completionsEnablement.js';
+import editorWorkerUrl from '../../common/services/editorWebWorkerMain.js?worker&url';
 
 /**
  * Stop the worker if it was not needed for 5 min.
@@ -61,7 +62,10 @@ export class EditorWorkerService extends Disposable implements IEditorWorkerServ
 
 	public static readonly workerDescriptor = new WebWorkerDescriptor({
 		esmModuleLocation: () => FileAccess.asBrowserUri('vs/editor/common/services/editorWebWorkerMain.js'),
-		esmModuleLocationBundler: () => new URL('../../common/services/editorWebWorkerMain.ts?esm', import.meta.url),
+		// `?esm` names the worker's source file for upstream's bundler consumers; Vite treats an
+		// unknown query as a plain asset and ships the untranspiled file. `?worker&url` is what
+		// makes it a bundled worker chunk, as `threadedBackgroundTokenizerFactory.ts` does.
+		esmModuleLocationBundler: () => new URL(editorWorkerUrl, globalThis.location.href),
 		label: 'editorWorkerService'
 	});
 

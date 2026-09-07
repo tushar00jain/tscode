@@ -31,10 +31,9 @@ import { CommandsRegistry, ICommandService } from '../../../../platform/commands
 import { ContextKeyExpr, ContextKeyExpression, IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { ExtensionIdentifier } from '../../../../platform/extensions/common/extensions.js';
 import { FileOperation, IFileService } from '../../../../platform/files/common/files.js';
-import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
 import { Extensions, IJSONContributionRegistry } from '../../../../platform/jsonschemas/common/jsonContributionRegistry.js';
 import { AbstractKeybindingService } from '../../../../platform/keybinding/common/abstractKeybindingService.js';
-import { IKeybindingService, IKeyboardEvent, KeybindingsSchemaContribution } from '../../../../platform/keybinding/common/keybinding.js';
+import { IKeyboardEvent, KeybindingsSchemaContribution } from '../../../../platform/keybinding/common/keybinding.js';
 import { KeybindingResolver } from '../../../../platform/keybinding/common/keybindingResolver.js';
 import { IExtensionKeybindingRule, IKeybindingItem, KeybindingsRegistry, KeybindingWeight } from '../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { ResolvedKeybindingItem } from '../../../../platform/keybinding/common/resolvedKeybindingItem.js';
@@ -1014,5 +1013,3 @@ class KeybindingsJsonSchema {
 		this.schemaRegistry.notifySchemaChanged(KeybindingsJsonSchema.schemaId);
 	}
 }
-
-registerSingleton(IKeybindingService, WorkbenchKeybindingService, InstantiationType.Eager);

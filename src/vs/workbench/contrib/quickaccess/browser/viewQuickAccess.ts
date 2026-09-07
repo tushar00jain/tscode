@@ -8,7 +8,6 @@ import { IQuickPickSeparator, IQuickInputService, ItemActivation } from '../../.
 import { IPickerQuickAccessItem, PickerQuickAccessProvider } from '../../../../platform/quickinput/browser/pickerQuickAccess.js';
 import { IViewDescriptorService, ViewContainer, ViewContainerLocation } from '../../../common/views.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
-import { IOutputService } from '../../../services/output/common/output.js';
 import { ITerminalGroupService, ITerminalService } from '../../terminal/browser/terminal.js';
 import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { PaneCompositeDescriptor } from '../../../browser/panecomposite.js';
@@ -21,7 +20,6 @@ import { KeyMod, KeyCode } from '../../../../base/common/keyCodes.js';
 import { KeybindingWeight } from '../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { Categories } from '../../../../platform/action/common/actionCommonCategories.js';
 import { IPaneCompositePartService } from '../../../services/panecomposite/browser/panecomposite.js';
-import { IDebugService, REPL_VIEW_ID } from '../../debug/common/debug.js';
 
 interface IViewQuickPickItem extends IPickerQuickAccessItem {
 	containerLabel: string;
@@ -34,10 +32,8 @@ export class ViewQuickAccessProvider extends PickerQuickAccessProvider<IViewQuic
 	constructor(
 		@IViewDescriptorService private readonly viewDescriptorService: IViewDescriptorService,
 		@IViewsService private readonly viewsService: IViewsService,
-		@IOutputService private readonly outputService: IOutputService,
 		@ITerminalService private readonly terminalService: ITerminalService,
 		@ITerminalGroupService private readonly terminalGroupService: ITerminalGroupService,
-		@IDebugService private readonly debugService: IDebugService,
 		@IPaneCompositePartService private readonly paneCompositeService: IPaneCompositePartService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService
 	) {
@@ -182,33 +178,6 @@ export class ViewQuickAccessProvider extends PickerQuickAccessProvider<IViewQuic
 				});
 			});
 		});
-
-		// Debug Consoles
-		this.debugService.getModel().getSessions(true).filter(s => s.hasSeparateRepl()).forEach((session, _) => {
-			const label = session.name;
-			viewEntries.push({
-				label,
-				containerLabel: localize('debugConsoles', "Debug Console"),
-				accept: async () => {
-					await this.debugService.focusStackFrame(undefined, undefined, session, { explicit: true });
-
-					if (!this.viewsService.isViewVisible(REPL_VIEW_ID)) {
-						await this.viewsService.openView(REPL_VIEW_ID, true);
-					}
-				}
-			});
-
-		});
-
-		// Output Channels
-		const channels = this.outputService.getChannelDescriptors();
-		for (const channel of channels) {
-			viewEntries.push({
-				label: channel.label,
-				containerLabel: localize('channels', "Output"),
-				accept: () => this.outputService.showChannel(channel.id)
-			});
-		}
 
 		return viewEntries;
 	}

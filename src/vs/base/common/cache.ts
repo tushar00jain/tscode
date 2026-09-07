@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { CancellationToken, CancellationTokenSource } from './cancellation.js';
-import { IDisposable } from './lifecycle.js';
+import type { IDisposable } from './lifecycle.js';
 
 export interface CacheResult<T> extends IDisposable {
 	promise: Promise<T>;

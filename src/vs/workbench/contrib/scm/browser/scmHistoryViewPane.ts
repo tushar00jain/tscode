@@ -63,7 +63,7 @@ import { basename } from '../../../../base/common/path.js';
 import { IEditorService } from '../../../services/editor/common/editorService.js';
 import { ScmHistoryItemResolver } from '../../multiDiffEditor/browser/scmMultiDiffSourceResolver.js';
 import { IResourceNode, ResourceTree } from '../../../../base/common/resourceTree.js';
-import { URI } from '../../../../base/common/uri.js';
+import { URI, UriComponents } from '../../../../base/common/uri.js';
 import { ITreeCompressionDelegate } from '../../../../base/browser/ui/tree/asyncDataTree.js';
 import { ICompressibleKeyboardNavigationLabelProvider, ICompressibleTreeRenderer } from '../../../../base/browser/ui/tree/objectTree.js';
 import { ICompressedTreeNode } from '../../../../base/browser/ui/tree/compressedObjectTreeModel.js';
@@ -71,7 +71,6 @@ import { ILabelService } from '../../../../platform/label/common/label.js';
 import { IDragAndDropData } from '../../../../base/browser/dnd.js';
 import { ElementsDragAndDropData, ListViewTargetSector } from '../../../../base/browser/ui/list/listView.js';
 import { CodeDataTransfers } from '../../../../platform/dnd/browser/dnd.js';
-import { SCMHistoryItemTransferData } from './scmHistoryChatContext.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { IMarkdownRendererService } from '../../../../platform/markdown/browser/markdownRenderer.js';
 import { MarkdownString } from '../../../../base/common/htmlContent.js';
@@ -83,7 +82,7 @@ type TreeElement = SCMHistoryItemViewModelTreeElement | SCMHistoryItemLoadMoreTr
 
 class SCMRepositoryActionViewItem extends ActionViewItem {
 	constructor(private readonly _repository: ISCMRepository, action: IAction, options?: IDropdownMenuActionViewItemOptions) {
-		super(null, action, { ...options, icon: false, label: true });
+		super(null, action, { ...options, icon: false, label: true, keybindingNotRenderedWithLabel: true });
 	}
 
 	protected override updateLabel(): void {
@@ -1019,6 +1018,12 @@ class SCMHistoryTreeDataSource extends Disposable implements IAsyncDataSource<SC
 			isSCMHistoryItemViewModelTreeElement(inputOrElement) ||
 			(isSCMHistoryItemChangeNode(inputOrElement) && inputOrElement.childrenCount > 0);
 	}
+}
+
+export interface SCMHistoryItemTransferData {
+	readonly name: string;
+	readonly resource: UriComponents;
+	readonly historyItem: ISCMHistoryItem;
 }
 
 class SCMHistoryTreeDragAndDrop implements ITreeDragAndDrop<TreeElement> {

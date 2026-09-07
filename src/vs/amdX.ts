@@ -8,6 +8,7 @@ import * as platform from './base/common/platform.js';
 import { IProductConfiguration } from './base/common/product.js';
 import { URI } from './base/common/uri.js';
 import { generateUuid } from './base/common/uuid.js';
+import onigWasmUrl from 'vscode-oniguruma/release/onig.wasm?url';
 
 declare const window: any;
 declare const document: any;
@@ -202,6 +203,35 @@ class AMDModuleImporter {
 const cache = new Map<string, Promise<any>>();
 
 /**
+ * tscode is bundled, so there is no `node_modules` directory at runtime for the AMD importer
+ * above to load a script out of. The npm packages the port actually ships are resolved by the
+ * bundler instead; anything not listed here keeps upstream's AMD path, which is the honest
+ * outcome for a package this port does not depend on.
+ */
+const bundledNodeModules: Record<string, () => Promise<unknown>> = {
+	'vscode-textmate': () => import('vscode-textmate'),
+	'vscode-oniguruma': () => import('vscode-oniguruma'),
+	'@vscode/iconv-lite-umd': () => import('@vscode/iconv-lite-umd'),
+	'@vscode/diff': () => import('@vscode/diff'),
+	'jschardet': () => import('jschardet'),
+	'@xterm/xterm': () => import('@xterm/xterm'),
+	'@xterm/addon-clipboard': () => import('@xterm/addon-clipboard'),
+	'@xterm/addon-image': () => import('@xterm/addon-image'),
+	// `@xterm/addon-ligatures` is deliberately absent: it inlines lru-cache, which imports
+	// `node:diagnostics_channel` unconditionally, so the module cannot evaluate in a browser.
+	'@xterm/addon-progress': () => import('@xterm/addon-progress'),
+	'@xterm/addon-search': () => import('@xterm/addon-search'),
+	'@xterm/addon-serialize': () => import('@xterm/addon-serialize'),
+	'@xterm/addon-unicode11': () => import('@xterm/addon-unicode11'),
+	'@xterm/addon-webgl': () => import('@xterm/addon-webgl')
+};
+
+/** Assets those packages ship alongside their code, emitted by the bundler. */
+const bundledNodeModuleAssets: Record<string, string> = {
+	'vscode-oniguruma/release/onig.wasm': onigWasmUrl
+};
+
+/**
  * Utility for importing an AMD node module. This util supports AMD and ESM contexts and should be used while the ESM adoption
  * is on its way.
  *
@@ -216,6 +246,12 @@ export async function importAMDNodeModule<T>(nodeModuleName: string, pathInsideN
 	const nodeModulePath = pathInsideNodeModule ? `${nodeModuleName}/${pathInsideNodeModule}` : nodeModuleName;
 	if (cache.has(nodeModulePath)) {
 		return cache.get(nodeModulePath)!;
+	}
+	const bundled = bundledNodeModules[nodeModuleName];
+	if (bundled) {
+		const bundledResult = bundled() as Promise<T>;
+		cache.set(nodeModulePath, bundledResult);
+		return bundledResult;
 	}
 	let scriptSrc: string;
 	if (/^\w[\w\d+.-]*:\/\//.test(nodeModulePath)) {
@@ -234,6 +270,11 @@ export async function importAMDNodeModule<T>(nodeModuleName: string, pathInsideN
 }
 
 export function resolveAmdNodeModulePath(nodeModuleName: string, pathInsideNodeModule: string): string {
+	const bundledAsset = bundledNodeModuleAssets[`${nodeModuleName}/${pathInsideNodeModule}`];
+	if (bundledAsset) {
+		return new URL(bundledAsset, globalThis.location.href).href;
+	}
+
 	const product = globalThis._VSCODE_PRODUCT_JSON as unknown as IProductConfiguration;
 	const isBuilt = Boolean((product ?? globalThis.vscode?.context?.configuration()?.product)?.commit);
 	const useASAR = (isBuilt && (platform.isElectron || (platform.isWebWorker && platform.hasElectronUserAgent)));

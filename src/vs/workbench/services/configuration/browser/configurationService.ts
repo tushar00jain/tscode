@@ -1,4 +1,4 @@
-/*---------------------------------------------------------------------------------------------
+﻿/*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
@@ -8,7 +8,7 @@ import { Event, Emitter } from '../../../../base/common/event.js';
 import { ResourceMap } from '../../../../base/common/map.js';
 import { equals } from '../../../../base/common/objects.js';
 import { Disposable, DisposableMap, DisposableStore } from '../../../../base/common/lifecycle.js';
-import { Queue, Barrier, Promises, Delayer, Throttler } from '../../../../base/common/async.js';
+import { Queue, Barrier, Promises, Delayer } from '../../../../base/common/async.js';
 import { IJSONContributionRegistry, Extensions as JSONExtensions } from '../../../../platform/jsonschemas/common/jsonContributionRegistry.js';
 import { IWorkspaceContextService, Workspace as BaseWorkspace, WorkbenchState, IWorkspaceFolder, IWorkspaceFoldersChangeEvent, WorkspaceFolder, toWorkspaceFolder, isWorkspaceFolder, IWorkspaceFoldersWillChangeEvent, IEmptyWorkspaceIdentifier, ISingleFolderWorkspaceIdentifier, isSingleFolderWorkspaceIdentifier, isWorkspaceIdentifier, IWorkspaceIdentifier, IAnyWorkspaceIdentifier } from '../../../../platform/workspace/common/workspace.js';
 import { ConfigurationModel, ConfigurationChangeEvent, mergeChanges } from '../../../../platform/configuration/common/configurationModels.js';
@@ -17,7 +17,7 @@ import { IPolicyConfiguration, NullPolicyConfiguration, PolicyConfiguration } fr
 import { Configuration } from '../common/configurationModels.js';
 import { FOLDER_CONFIG_FOLDER_NAME, defaultSettingsSchemaId, userSettingsSchemaId, workspaceSettingsSchemaId, folderSettingsSchemaId, IConfigurationCache, machineSettingsSchemaId, LOCAL_MACHINE_SCOPES, IWorkbenchConfigurationService, RestrictedSettings, PROFILE_SCOPES, LOCAL_MACHINE_PROFILE_SCOPES, profileSettingsSchemaId, APPLY_ALL_PROFILES_SETTING, APPLICATION_SCOPES } from '../common/configuration.js';
 import { Registry } from '../../../../platform/registry/common/platform.js';
-import { IConfigurationRegistry, Extensions, allSettings, windowSettings, resourceSettings, applicationSettings, machineSettings, machineOverridableSettings, ConfigurationScope, IConfigurationPropertySchema, keyFromOverrideIdentifiers, OVERRIDE_PROPERTY_PATTERN, resourceLanguageSettingsSchemaId, configurationDefaultsSchemaId, applicationMachineSettings, isConfigurationDefaultSourceEquals, ConfigurationDefaultSource } from '../../../../platform/configuration/common/configurationRegistry.js';
+import { IConfigurationRegistry, Extensions, allSettings, windowSettings, resourceSettings, applicationSettings, machineSettings, machineOverridableSettings, ConfigurationScope, IConfigurationPropertySchema, keyFromOverrideIdentifiers, OVERRIDE_PROPERTY_PATTERN, resourceLanguageSettingsSchemaId, configurationDefaultsSchemaId, applicationMachineSettings } from '../../../../platform/configuration/common/configurationRegistry.js';
 import { IStoredWorkspaceFolder, isStoredWorkspaceFolder, IWorkspaceFolderCreationData, getStoredWorkspaceFolder, toWorkspaceFolders } from '../../../../platform/workspaces/common/workspaces.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ConfigurationEditing, EditableConfigurationTarget } from '../common/configurationEditing.js';
@@ -36,8 +36,6 @@ import { IWorkspaceTrustManagementService } from '../../../../platform/workspace
 import { delta, distinct, equals as arrayEquals } from '../../../../base/common/arrays.js';
 import { IStringDictionary } from '../../../../base/common/collections.js';
 import { IExtensionService } from '../../extensions/common/extensions.js';
-import { IWorkbenchAssignmentService } from '../../assignment/common/assignmentService.js';
-import { isUndefined } from '../../../../base/common/types.js';
 import { localize } from '../../../../nls.js';
 import { DidChangeUserDataProfileEvent, IUserDataProfileService } from '../../userDataProfile/common/userDataProfile.js';
 import { IPolicyService, NullPolicyService } from '../../../../platform/policy/common/policy.js';
@@ -1350,82 +1348,22 @@ class ConfigurationDefaultOverridesContribution extends Disposable implements IW
 
 	static readonly ID = 'workbench.contrib.configurationDefaultOverridesContribution';
 
-	private readonly processedExperimentalSettings = new Set<string>();
-	private readonly autoExperimentalSettings = new Set<string>();
-	private readonly configurationRegistry = Registry.as<IConfigurationRegistry>(Extensions.Configuration);
-	private readonly throttler = this._register(new Throttler());
-
 	constructor(
-		@IWorkbenchAssignmentService private readonly workbenchAssignmentService: IWorkbenchAssignmentService,
 		@IExtensionService private readonly extensionService: IExtensionService,
 		@IConfigurationService private readonly configurationService: WorkspaceService,
-		@IWorkbenchEnvironmentService private readonly environmentService: IWorkbenchEnvironmentService,
 		@ILogService private readonly logService: ILogService
 	) {
 		super();
 
-		this.throttler.queue(() => this.updateDefaults());
-		this._register(workbenchAssignmentService.onDidRefetchAssignments(() => this.throttler.queue(() => this.processExperimentalSettings(this.autoExperimentalSettings, true))));
-
-		// When configuration is updated make sure to apply experimental configuration overrides
-		this._register(this.configurationRegistry.onDidUpdateConfiguration(({ properties }) => this.processExperimentalSettings(properties, false)));
+		this.updateDefaults();
 	}
 
 	private async updateDefaults(): Promise<void> {
-		this.logService.trace('ConfigurationService#updateDefaults: begin');
-		try {
-			// Check for experiments
-			await this.processExperimentalSettings(Object.keys(this.configurationRegistry.getConfigurationProperties()), false);
-		} finally {
-			// Invalidate defaults cache after extensions have registered
-			// and after the experiments have been resolved to prevent
-			// resetting the overrides too early.
-			await this.extensionService.whenInstalledExtensionsRegistered();
-			this.logService.trace('ConfigurationService#updateDefaults: resetting the defaults');
-			this.configurationService.reloadConfiguration(ConfigurationTarget.DEFAULT);
-		}
-	}
-
-	private async processExperimentalSettings(properties: Iterable<string>, autoRefetch: boolean): Promise<void> {
-		const overrides: IStringDictionary<unknown> = {};
-		const allProperties = this.configurationRegistry.getConfigurationProperties();
-		const defaultConfigurationsPreventingExperimentOverrides = this.configurationRegistry.getRegisteredDefaultConfigurations().filter(configuration => configuration.preventExperimentOverride);
-		for (const property of properties) {
-			const schema = allProperties[property];
-			if (!schema?.experiment) {
-				continue;
-			}
-			const defaultValueSource: ConfigurationDefaultSource | undefined = schema.defaultValueSource && !(schema.defaultValueSource instanceof Map) ? schema.defaultValueSource : undefined;
-			if (defaultValueSource && defaultConfigurationsPreventingExperimentOverrides.some(configuration => isConfigurationDefaultSourceEquals(configuration.source, defaultValueSource) && configuration.overrides?.[property] !== undefined)) {
-				continue;
-			}
-			if (!autoRefetch && this.processedExperimentalSettings.has(property)) {
-				continue;
-			}
-			this.processedExperimentalSettings.add(property);
-			if (schema.experiment.mode === 'auto') {
-				this.autoExperimentalSettings.add(property);
-			}
-			try {
-				const value = await this.workbenchAssignmentService.getTreatment(schema.experiment.name ?? `config.${property}`);
-				if (this.shouldOverride(value, schema)) {
-					overrides[property] = value;
-				}
-			} catch (error) {/*ignore */ }
-		}
-		if (Object.keys(overrides).length) {
-			this.configurationRegistry.registerDefaultConfigurations([{ overrides, source: 'experiments' }]);
-		}
-	}
-
-	private shouldOverride(value: unknown, schema: IConfigurationPropertySchema): boolean {
-		if (isUndefined(value)) {
-			return false;
-		}
-		if (this.environmentService.isSessionsWindow && schema.agentsWindow?.default !== undefined) {
-			return !equals(value, schema.agentsWindow?.default);
-		}
-		return !equals(value, schema.default);
+		// Invalidate defaults cache after extensions have registered, so that
+		// the defaults they contribute are picked up.
+		await this.extensionService.whenInstalledExtensionsRegistered();
+		this.logService.trace('ConfigurationService#updateDefaults: resetting the defaults');
+		this.configurationService.reloadConfiguration(ConfigurationTarget.DEFAULT);
 	}
 }
 

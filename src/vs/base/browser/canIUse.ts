@@ -3,7 +3,6 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as browser from './browser.js';
 import { mainWindow } from './window.js';
 import * as platform from '../common/platform.js';
 
@@ -29,15 +28,12 @@ export const BrowserFeatures = {
 		)
 	},
 	keyboard: (() => {
-		if (platform.isNative || browser.isStandalone()) {
-			return KeyboardSupport.Always;
-		}
-
-		if ((navigator as Navigator & { keyboard?: unknown }).keyboard || browser.isSafari) {
-			return KeyboardSupport.FullScreen;
-		}
-
-		return KeyboardSupport.None;
+		// tscode is a native window with no browser chrome and zoom hotkeys disabled, so no
+		// combination is the page's to lose to a browser. Stock resolves this to `FullScreen`
+		// here — `nodeProcess` is undefined in the WebView, so `isNative` is false — and
+		// `_assertBrowserConflicts` then strips `Ctrl+1…0` and `Ctrl+Alt+Left/Right` from the
+		// defaults, which is where the shared keymap's view-container digits live.
+		return KeyboardSupport.Always;
 	})(),
 
 	// 'ontouchstart' in window always evaluates to true with typescript's modern typings. This causes `window` to be

@@ -5,7 +5,7 @@
 
 import { CharCode } from './charCode.js';
 import { compareAnything } from './comparers.js';
-import { createMatches as createFuzzyMatches, fuzzyScore, IMatch, isUpper, matchesPrefix } from './filters.js';
+import { createMatches as createFuzzyMatches, fuzzyScore, type IMatch, isUpper, matchesPrefix } from './filters.js';
 import { hash } from './hash.js';
 import { sep } from './path.js';
 import { isLinux, isWindows } from './platform.js';
