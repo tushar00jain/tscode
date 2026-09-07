@@ -1,0 +1,9 @@
+# LF everywhere, including in the working tree on Windows. This branch is the pristine
+# upstream baseline, compared byte-for-byte against a VS Code checkout, so a worktree that
+# checked out CRLF would make every file here look modified and silently disable both the
+# divergence audit and the copy script's protection rule.
+#
+# This is the one file on `vendor` the copy script does not produce. It has to be here
+# rather than only on `main`, because Git reads attributes from the branch being checked
+# out, and a fresh worktree on `vendor` has no other source of them.
+* text=auto eol=lf
